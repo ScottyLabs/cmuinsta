@@ -80,6 +80,7 @@
             rustToolchain
             trunk        # Required for building Dioxus web
             cargo-watch
+            dioxus-cli
 
             # Database
             postgresql
@@ -88,6 +89,8 @@
             # System libs
             pkg-config
             openssl
+
+            just
           ];
 
           # Environment setup

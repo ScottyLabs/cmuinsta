@@ -15,7 +15,7 @@ To get started, follow these steps:
    ```
 4. Initialize the database
    ```bash
-   just init-db
+   just db-init
    ```
 5. Run the app for development or production
    ```bash

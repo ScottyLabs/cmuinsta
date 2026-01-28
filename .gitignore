@@ -26,3 +26,5 @@ result
 
 # Local Postgres
 .pg/
+
+.env

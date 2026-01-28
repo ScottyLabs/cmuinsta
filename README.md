@@ -8,21 +8,22 @@ To get started, follow these steps:
    ```bash
    git clone https://github.com/yourusername/cmuinsta.git
    ```
-2. Make sure you have NixOS with DirEnv installed 
+2. Make sure you have NixOS with DirEnv installed, similar if not same as [Terrier contribution setup](https://github.com/ScottyLabs/terrier/blob/main/CONTRIBUTING.md)
 3. Navigate to the project directory:
    ```bash
    cd cmuinsta
    ```
-4. Initialize the database
+4. Copy the `.env.sample` file and modify
+5. Initialize the database
    ```bash
    just db-init
    ```
-5. Run the app for development or production
+6. Run the app for development or production
    ```bash
    just dev
    just up
    ```
-6. Kill the app
+7. Kill the app
    ```bash
    just down
    ```

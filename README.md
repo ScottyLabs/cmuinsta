@@ -11,11 +11,21 @@ Automating frontend for the CMU prefrosh page.
 
 To get started, follow these steps:
 
+<<<<<<< HEAD
 1. **Clone the repository:**
+=======
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/cmuinsta.git
+   ```
+2. Make sure you have NixOS with DirEnv installed, similar if not same as [Terrier contribution setup](https://github.com/ScottyLabs/terrier/blob/main/CONTRIBUTING.md)
+3. Navigate to the project directory:
+>>>>>>> refs/remotes/origin/main
    ```bash
    git clone https://github.com/etashj/cmuinsta.git
    cd cmuinsta
    ```
+<<<<<<< HEAD
 
 2. **Environment Setup:**
    Ensure you have [Nix](https://nixos.org/download.html) and [direnv](https://direnv.net/) installed.
@@ -33,6 +43,21 @@ To get started, follow these steps:
    This starts the Postgres database, the Go backend, and the Svelte frontend concurrently.
    ```bash
    just dev
+=======
+4. Copy the `.env.sample` file and modify
+5. Initialize the database
+   ```bash
+   just db-init
+   ```
+6. Run the app for development or production
+   ```bash
+   just dev
+   just up
+   ```
+7. Kill the app
+   ```bash
+   just down
+>>>>>>> refs/remotes/origin/main
    ```
 
 ### Commands

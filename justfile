@@ -1,62 +1,51 @@
 # https://just.systems
 
-set dotenv-load:=true
+set dotenv-load := true
 
-DB_NAME     := env_var('DB_NAME')
-ADMIN_EMAILS := env_var('ADMIN_EMAILS')
-ADMIN_GROUP := "ADMINS"
+# Default recipe
+default: dev
 
-# Serve the application with hot reloading
+# --- Main Development Commands ---
+
+# Run the full stack in development mode (Backend + Frontend)
 dev: db-start
-    dx serve
+    @echo "🚀 Starting Go Backend..."
+    # We run the backend in the background.
+    # Note: Ctrl+C might not kill the background process immediately in some shells.
+    (cd backend && go run main.go) & \
+    (cd frontend && pnpm install && pnpm dev)
 
-# Build the application for release
+# Build both backend and frontend for production
 build:
-    dx build --release
+    @echo "📦 Building Backend..."
+    mkdir -p bin
+    cd backend && go build -o ../bin/server main.go
+    @echo "📦 Building Frontend..."
+    cd frontend && pnpm install && pnpm build
 
-# Host the application (run release build)
-up: db-start
-    cargo run --release
-
-# Kill the application
-down: db-stop
-      cargo kill
+# Clean build artifacts
+clean:
+    rm -rf bin
+    rm -rf frontend/dist
+    rm -rf frontend/node_modules
 
 # --- Database Helpers ---
 
 # Start the local postgres instance
 db-start:
-    # We ignore errors here in case it's already running
-    pg-manage start || echo "Database might already be running"
+    pg-manage start || echo "⚠️ Database might already be running"
 
 # Stop the local postgres instance
 db-stop:
     pg-manage stop
 
-# Initialize DB with Group-based authentication
+# Initialize the database environment
 db-init:
     pg-manage init
-    pg-manage start || echo "Database might already be running"
-    @echo "Creating database: {{DB_NAME}}..."
-    psql -d postgres -c "CREATE DATABASE {{DB_NAME}};" || echo "Database already exists."
+    pg-manage start || echo "⚠️ Database might already be running"
+    pg-manage create-user-db || echo "⚠️ Database might already exist"
 
-    @echo "Setting up Group Role: {{ADMIN_GROUP}}..."
-    # Create the group role (NOLOGIN means you can't log in as the group itself)
-    psql -d {{DB_NAME}} -c "CREATE ROLE {{ADMIN_GROUP}} WITH NOLOGIN;" || echo "Group already exists."
-
-    # Grant permissions to the Group
-    psql -d {{DB_NAME}} -c "GRANT ALL PRIVILEGES ON DATABASE {{DB_NAME}} TO {{ADMIN_GROUP}};"
-    psql -d {{DB_NAME}} -c "GRANT ALL PRIVILEGES ON SCHEMA public TO {{ADMIN_GROUP}};"
-    # Ensure future tables created by one admin are accessible by others
-    psql -d {{DB_NAME}} -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO {{ADMIN_GROUP}};"
-
-    @for user in {{ADMIN_EMAILS}}; do \
-        echo "Adding $$user to {{ADMIN_GROUP}}..."; \
-        psql -d postgres -c "CREATE USER \"$$user\";" || echo "User $$user already exists."; \
-        psql -d {{DB_NAME}} -c "GRANT {{ADMIN_GROUP}} TO \"$$user\";"; \
-    done
-    @echo "Group-based initialization complete."
-
+# Open a psql shell to the database
 db-shell:
-    pg-manage start || echo "Database might already be running"
+    pg-manage start || echo "⚠️ Database might already be running"
     pg-manage shell

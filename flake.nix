@@ -1,28 +1,16 @@
 {
-  description = "Rust Dioxus Full Stack with Postgres";
+  description = "Svelte + Go + Postgres Development Environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
+  outputs = { self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
-          inherit system overlays;
-        };
-
-        # Rust toolchain setup
-        # Includes wasm32-unknown-unknown for Dioxus web client compilation
-        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rust-analyzer" ];
-          targets = [ "wasm32-unknown-unknown" ];
+          inherit system;
         };
 
         # Helper script to manage a local Postgres instance in .pg/
@@ -76,11 +64,15 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            # Rust environment
-            rustToolchain
-            trunk        # Required for building Dioxus web
-            cargo-watch
-            dioxus-cli
+            # Go environment
+            go
+            gopls
+            delve
+            go-tools
+
+            # Node/Frontend environment
+            nodejs_20
+            nodePackages.pnpm
 
             # Database
             postgresql
@@ -98,16 +90,16 @@
             export PGDATA=$PWD/.pg/data
             export PGHOST=$PWD/.pg/socket
 
-            # Common Env var for SQLx and other tools
+            # Common Env var for tools
             # Note: The host part points to the unix socket directory
             export DATABASE_URL="postgresql:///$USER?host=$PGHOST"
 
-            echo "🚀 Rust Dioxus + Postgres Dev Environment"
+            echo "🚀 Svelte + Go + Postgres Dev Environment"
             echo "Commands available:"
             echo "  pg-manage init           -> Initialize database in .pg/"
             echo "  pg-manage start          -> Start the database server"
             echo "  pg-manage create-user-db -> Create a DB named '$USER'"
-            echo "  trunk serve              -> Run your Dioxus app"
+            echo "  just dev                 -> Run the full stack"
           '';
         };
       }

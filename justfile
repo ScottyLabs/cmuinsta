@@ -7,6 +7,10 @@ export LOGFILE  := PGDATA + "/logfile"
 # Force absolute path for DATABASE_URL so 'cd backend' doesn't break the socket path
 export DATABASE_URL := "host=" + PGHOST + " user=postgres dbname=postgres sslmode=disable"
 
+# Global Port Config (with defaults)
+BACKEND_PORT  := env_var_or_default('BACKEND_PORT', '8080')
+FRONTEND_PORT := env_var_or_default('FRONTEND_PORT', '5173')
+
 # Default recipe
 default:
     @just --list
@@ -18,8 +22,10 @@ up: db-start
     @echo "📦 Syncing all dependencies..."
     cd backend && go mod tidy
     cd frontend && bun install
-    @echo "🚀 Starting Full Stack..."
-    (cd backend && go run main.go) & (cd frontend && bun dev)
+    @echo "🚀 Starting Full Stack (Backend: {{BACKEND_PORT}}, Frontend: {{FRONTEND_PORT}})..."
+    # Pass PORT to Go and use --port for Bun/Vite
+    (cd backend && PORT={{BACKEND_PORT}} go run main.go) & \
+    (cd frontend && bun dev --port {{FRONTEND_PORT}})
 
 # Stop the full stack and cleanup background processes safely
 down: db-stop
@@ -33,8 +39,13 @@ down: db-stop
 # --- Development Commands ---
 
 dev: db-start
-    @echo "🚀 Starting Full Stack..."
-    (cd backend && go run main.go) & (cd frontend && bun dev)
+    @echo "📦 Syncing all dependencies..."
+    cd backend && go mod tidy
+    cd frontend && bun install
+    @echo "🚀 Starting Full Stack (Backend: {{BACKEND_PORT}}, Frontend: {{FRONTEND_PORT}})..."
+    # Pass PORT to Go and use --port for Bun/Vite
+    (cd backend && PORT={{BACKEND_PORT}} go run main.go) & \
+    (cd frontend && bun dev --port {{FRONTEND_PORT}})
 
 build:
     @echo "📦 Building project..."

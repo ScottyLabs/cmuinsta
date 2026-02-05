@@ -9,7 +9,7 @@ This project uses a split-stack architecture:
 
 - `/frontend`: Svelte application
 - `/backend`: Go API server
-- `/.pg`: Local Postgres data (managed by `pg-manage`)
+- `/.pg_data`: Local Postgres data (managed by `pg-manage`)
 - `flake.nix`: Nix development environment configuration
 - `justfile`: Command runner
 

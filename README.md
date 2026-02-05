@@ -22,19 +22,16 @@ To get started, follow these steps:
    cd cmuinsta
    ```
 4. Copy the `.env.sample` file and modify
-5. Initialize the database
-   ```bash
-   just db-init
-   ```
-6. Run the app for development or production
+5. Run the app for development or production
    ```bash
    just dev
    just up
    ```
-7. Kill the app
+6. Kill the app
    ```bash
    just down
    ```
+7. If something goes wrong idk what to do tbh
 
 ### Commands
 

@@ -35,4 +35,6 @@ dist/
 .vscode/
 .idea/
 *.swp
+
 .pg_data
+tmp

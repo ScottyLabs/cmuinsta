@@ -1,51 +1,74 @@
-# https://just.systems
-
 set dotenv-load := true
 
+# Global Variables
+export PGDATA   := invocation_directory() + "/.pg_data"
+export PGHOST   := invocation_directory() + "/tmp"
+export LOGFILE  := PGDATA + "/logfile"
+# Force absolute path for DATABASE_URL so 'cd backend' doesn't break the socket path
+export DATABASE_URL := "host=" + PGHOST + " user=postgres dbname=postgres sslmode=disable"
+
 # Default recipe
-default: dev
+default:
+    @just --list
 
-# --- Main Development Commands ---
+# --- The "One Script" Solution ---
 
-# Run the full stack in development mode (Backend + Frontend)
+# Setup, Sync, and Run everything
+up: db-start
+    @echo "📦 Syncing all dependencies..."
+    cd backend && go mod tidy
+    cd frontend && bun install
+    @echo "🚀 Starting Full Stack..."
+    (cd backend && go run main.go) & (cd frontend && bun dev)
+
+# Stop the full stack and cleanup background processes safely
+down: db-stop
+    @echo "🛑 Cleaning up your dev processes..."
+    @# -U $(id -u) ensures you only kill processes owned by YOU
+    -pkill -u $(id -u) -f "go run main.go" || true
+    -pkill -u $(id -u) -f "vite" || true
+    -pkill -u $(id -u) -f "bun" || true
+    @echo "✅ Everything is down."
+
+# --- Development Commands ---
+
 dev: db-start
-    @echo "🚀 Starting Go Backend..."
-    # We run the backend in the background.
-    # Note: Ctrl+C might not kill the background process immediately in some shells.
-    (cd backend && go run main.go) & \
-    (cd frontend && pnpm install && pnpm dev)
+    @echo "🚀 Starting Full Stack..."
+    (cd backend && go run main.go) & (cd frontend && bun dev)
 
-# Build both backend and frontend for production
 build:
-    @echo "📦 Building Backend..."
+    @echo "📦 Building project..."
     mkdir -p bin
     cd backend && go build -o ../bin/server main.go
-    @echo "📦 Building Frontend..."
-    cd frontend && pnpm install && pnpm build
+    cd frontend && bun install && bun run build
 
-# Clean build artifacts
 clean:
-    rm -rf bin
-    rm -rf frontend/dist
-    rm -rf frontend/node_modules
+    rm -rf bin frontend/dist frontend/node_modules .pg_data tmp
 
-# --- Database Helpers ---
+# --- Database Management ---
 
-# Start the local postgres instance
 db-start:
-    pg-manage start || echo "⚠️ Database might already be running"
+    @mkdir -p {{PGHOST}}
+    @if [ ! -d "{{PGDATA}}" ]; then \
+        echo "📦 Initializing New Database Cluster..."; \
+        initdb --auth=trust --no-locale --encoding=UTF8 > /dev/null; \
+        pg_ctl -D {{PGDATA}} -l {{LOGFILE}} -o "-k {{PGHOST}}" start; \
+        sleep 2; \
+        createuser -h {{PGHOST}} -s postgres || true; \
+        createdb -h {{PGHOST}} -O postgres postgres || true; \
+    fi
+    @pg_ctl status -D {{PGDATA}} > /dev/null || pg_ctl -D {{PGDATA}} -l {{LOGFILE}} -o "-k {{PGHOST}}" start
+    @# Verify the postgres role exists (handles cases where init was interrupted)
+    @psql -h {{PGHOST}} -U $(whoami) -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='postgres'" | grep -q 1 || createuser -h {{PGHOST}} -s postgres
+    @echo "🐘 Postgres is active at {{PGHOST}}"
 
-# Stop the local postgres instance
 db-stop:
-    pg-manage stop
+    @pg_ctl -D {{PGDATA}} stop
 
-# Initialize the database environment
-db-init:
-    pg-manage init
-    pg-manage start || echo "⚠️ Database might already be running"
-    pg-manage create-user-db || echo "⚠️ Database might already exist"
+db-reset:
+    @just db-stop || true
+    rm -rf {{PGDATA}} {{PGHOST}}
+    @just db-start
 
-# Open a psql shell to the database
-db-shell:
-    pg-manage start || echo "⚠️ Database might already be running"
-    pg-manage shell
+db-shell: db-start
+    psql -h {{PGHOST}} -U postgres -d postgres

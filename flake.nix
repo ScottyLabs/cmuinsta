@@ -1,105 +1,54 @@
 {
-  description = "Svelte + Go + Postgres Development Environment";
+  description = "A Nix-flake-based dev environment for Postgres, Go, and Svelte (via Bun)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-        };
-
-        # Helper script to manage a local Postgres instance in .pg/
-        pgScript = pkgs.writeShellScriptBin "pg-manage" ''
-          export PGDATA=$PWD/.pg/data
-          export PGHOST=$PWD/.pg/socket
-          export LOGFILE=$PWD/.pg/logfile
-
-          mkdir -p $PGHOST
-
-          case "$1" in
-            init)
-              if [ ! -d $PGDATA ]; then
-                echo "Initializing Postgres..."
-                ${pkgs.postgresql}/bin/initdb -D $PGDATA --no-locale --encoding=UTF8
-
-                # Configure to use local socket only
-                echo "unix_socket_directories = '$PGHOST'" >> $PGDATA/postgresql.conf
-                echo "listen_addresses = '''" >> $PGDATA/postgresql.conf
-
-                echo "Postgres initialized in .pg/"
-              else
-                echo "Postgres already initialized."
-              fi
-              ;;
-            start)
-              if [ ! -d $PGDATA ]; then
-                echo "Run 'pg-manage init' first."
-                exit 1
-              fi
-              ${pkgs.postgresql}/bin/pg_ctl -D $PGDATA -l $LOGFILE -o "-k $PGHOST" start
-              echo "Postgres started. Connect via socket at $PGHOST"
-              ;;
-            stop)
-               ${pkgs.postgresql}/bin/pg_ctl -D $PGDATA stop
-               ;;
-            create-user-db)
-               # creates a db with the same name as the current user
-               ${pkgs.postgresql}/bin/createdb -h $PGHOST $USER
-               ;;
-            shell)
-               ${pkgs.postgresql}/bin/psql -h $PGHOST postgres
-               ;;
-            *)
-              echo "Usage: pg-manage {init|start|stop|create-user-db|shell}"
-              ;;
-          esac
-        '';
-
+        pkgs = import nixpkgs { inherit system; };
       in
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            # Go environment
+            # --- Go ---
             go
             gopls
-            delve
-            go-tools
 
-            # Node/Frontend environment
+            # --- Frontend (Bun) ---
+            bun
+            # We keep nodejs as a fallback, as some Svelte tools expect it
             nodejs_20
-            nodePackages.pnpm
 
-            # Database
-            postgresql
-            pgScript     # Our custom management script
+            # --- Database ---
+            postgresql_16
 
-            # System libs
-            pkg-config
-            openssl
-
+            # --- Utilities ---
+            jq
             just
           ];
 
-          # Environment setup
           shellHook = ''
-            export PGDATA=$PWD/.pg/data
-            export PGHOST=$PWD/.pg/socket
+            echo "🚀 Dev Shell Active: Bun + Go + Postgres"
 
-            # Common Env var for tools
-            # Note: The host part points to the unix socket directory
-            export DATABASE_URL="postgresql:///$USER?host=$PGHOST"
+            # --- Local Postgres Config ---
+            export PGDATA="$PWD/.pg_data"
+            export PGHOST="$PWD/tmp"
+            mkdir -p $PGHOST
 
-            echo "🚀 Svelte + Go + Postgres Dev Environment"
-            echo "Commands available:"
-            echo "  pg-manage init           -> Initialize database in .pg/"
-            echo "  pg-manage start          -> Start the database server"
-            echo "  pg-manage create-user-db -> Create a DB named '$USER'"
-            echo "  just dev                 -> Run the full stack"
+            if [ ! -d "$PGDATA" ]; then
+              echo "📦 Initializing local Postgres data..."
+              initdb --auth=trust --no-locale --encoding=UTF8 > /dev/null
+            fi
+
+            echo "----------------------------------------"
+            echo "🔥 BUN: use 'bun install' and 'bun dev'"
+            echo "🐹 GO:  use 'go run main.go'"
+            echo "🐘 DB:  'pg_ctl -l $PGDATA/logfile start'"
+            echo "----------------------------------------"
           '';
         };
       }

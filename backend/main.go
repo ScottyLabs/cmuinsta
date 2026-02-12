@@ -14,6 +14,7 @@ import (
 func main() {
 	// 1. Database Connection
 	dbURL := os.Getenv("DATABASE_URL")
+	fmt.Printf("DEBUG: The URL Go is using is: %s\n", os.Getenv("DATABASE_URL"))
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL environment variable is not set")
 	}
@@ -29,8 +30,43 @@ func main() {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 	fmt.Println("✅ Connected to Postgres database!")
+	var dbName string
+	err = db.QueryRow("SELECT current_database()").Scan(&dbName)
+	if err == nil {
+		fmt.Printf("📊 Confirmed: Connected to database [%s]\n", dbName)
+	}
 
-	// 2. Setup Router
+	// 2. Create Table
+	// The table format is like this
+	// |------------|------------|------------|------------|-----------|-------------|
+	// | id         | andrewid   | content    | created_at | approved  | approved_at |
+	// |------------|------------|------------|------------|-----------|-------------|
+	//
+	// `content` contains a path to a folder, this folder will look something like this:
+	//			 andrewid
+	//			  ├── caption.txt    (required)
+	//			  ├── 0.jpg          (required)
+	//			  ├── 1.mov          (optional)
+	//			  │   ...            (optional)
+	//			  └── 9.mp4          (optional)
+
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS posts (
+			id SERIAL PRIMARY KEY,
+			andrewid VARCHAR(8) NOT NULL,
+			username VARCHAR(30) NOT NULL,
+			content TEXT NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			approved BOOLEAN DEFAULT FALSE,
+			approved_at TIMESTAMP DEFAULT NULL
+		);
+	`)
+	if err != nil {
+		log.Fatalf("Error creating table: %v", err)
+	}
+	fmt.Println("✅ Database schema initialized!")
+
+	// 3. Setup Router
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
@@ -47,10 +83,10 @@ func main() {
 		json.NewEncoder(w).Encode(response)
 	})
 
-	// 3. CORS Middleware (for development)
+	// 4. CORS Middleware (for development)
 	handler := corsMiddleware(mux)
 
-	// 4. Start Server
+	// 5. Start Server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

@@ -1,11 +1,15 @@
 set dotenv-load := true
 
 # Global Variables
-export PGDATA   := invocation_directory() + "/.pg_data"
-export PGHOST   := invocation_directory() + "/tmp"
-export LOGFILE  := PGDATA + "/logfile"
-# Force absolute path for DATABASE_URL so 'cd backend' doesn't break the socket path
-export DATABASE_URL := "host=" + PGHOST + " user=postgres dbname=postgres sslmode=disable"
+export PGDATA       := invocation_directory() + "/.pg_data"
+export PGHOST       := invocation_directory() + "/tmp"
+export LOGFILE      := PGDATA + "/logfile"
+
+# Use the correct database name here
+export DB_NAME      := "cmuinsta"
+
+# Construct the URL using the variables defined above
+export DATABASE_URL := "host=" + PGHOST + " user=postgres dbname=" + DB_NAME + " sslmode=disable"
 
 # Global Port Config (with defaults)
 BACKEND_PORT  := env_var_or_default('BACKEND_PORT', '8080')
@@ -19,6 +23,7 @@ default:
 
 # Setup, Sync, and Run everything
 up: db-start
+    mkdir .posts_store
     @echo "📦 Syncing all dependencies..."
     cd backend && go mod tidy
     cd frontend && bun install
@@ -39,6 +44,7 @@ down: db-stop
 # --- Development Commands ---
 
 dev: db-start
+    mkdir .posts_store
     @echo "📦 Syncing all dependencies..."
     cd backend && go mod tidy
     cd frontend && bun install
@@ -80,6 +86,11 @@ db-reset:
     @just db-stop || true
     rm -rf {{PGDATA}} {{PGHOST}}
     @just db-start
+    @just db-init
 
 db-shell: db-start
     psql -h {{PGHOST}} -U postgres -d postgres
+
+# Initialize the database (Run this once)
+db-init:
+    psql -U etashj -d postgres -c "CREATE DATABASE cmuinsta;"

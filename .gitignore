@@ -38,3 +38,4 @@ dist/
 
 .pg_data
 tmp
+.posts_store

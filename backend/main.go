@@ -1,17 +1,27 @@
 package main
 
 import (
+	"cmuinsta/backend/handlers"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
+	// 0. Debug OIDC Configuration
+	fmt.Println("🔐 OIDC Configuration:")
+	fmt.Printf("   OIDC_ISSUER_URL: %s\n", os.Getenv("OIDC_ISSUER_URL"))
+	fmt.Printf("   OIDC_CLIENT_ID: %s\n", os.Getenv("OIDC_CLIENT_ID"))
+	fmt.Printf("   OIDC_CLIENT_SECRET: %s\n", maskSecret(os.Getenv("OIDC_CLIENT_SECRET")))
+	fmt.Printf("   OIDC_REDIRECT_URI: %s\n", os.Getenv("OIDC_REDIRECT_URI"))
+	fmt.Printf("   ADMIN_IDS: %s\n", os.Getenv("ADMIN_IDS"))
+
 	// 1. Database Connection
 	dbURL := os.Getenv("DATABASE_URL")
 	fmt.Printf("DEBUG: The URL Go is using is: %s\n", os.Getenv("DATABASE_URL"))
@@ -38,11 +48,11 @@ func main() {
 
 	// 2. Create Table
 	// The table format is like this
-	// |------------|------------|------------|------------|-----------|-------------|
-	// | id         | andrewid   | content    | created_at | approved  | approved_at |
-	// |------------|------------|------------|------------|-----------|-------------|
+	// |------------|------------|------------|------------|--------------|-------------|-----------|
+	// | id         | andrewid   | username   | created_at | submitted_at | approved_at | posted_at |
+	// |------------|------------|------------|------------|--------------|-------------|-----------|
 	//
-	// `content` contains a path to a folder, this folder will look something like this:
+	// content folder will look something like this:
 	//			 andrewid
 	//			  ├── caption.txt    (required)
 	//			  ├── 0.jpg          (required)
@@ -55,10 +65,10 @@ func main() {
 			id SERIAL PRIMARY KEY,
 			andrewid VARCHAR(8) NOT NULL,
 			username VARCHAR(30) NOT NULL,
-			content TEXT NOT NULL,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			approved BOOLEAN DEFAULT FALSE,
-			approved_at TIMESTAMP DEFAULT NULL
+			submitted_at TIMESTAMP DEFAULT NULL,
+			approved_at TIMESTAMP DEFAULT NULL,
+			posted_at TIMESTAMP DEFAULT NULL
 		);
 	`)
 	if err != nil {
@@ -66,27 +76,59 @@ func main() {
 	}
 	fmt.Println("✅ Database schema initialized!")
 
-	// 3. Setup Router
+	// 3. Setup posts store directory
+	postsStoreDir := os.Getenv("POSTS_STORE_DIR")
+	if postsStoreDir == "" {
+		// Default to .posts_store in the project root (one level up from backend/)
+		postsStoreDir = "../.posts_store"
+	}
+	// Ensure the directory exists
+	if err := os.MkdirAll(postsStoreDir, 0755); err != nil {
+		log.Fatalf("Error creating posts store directory: %v", err)
+	}
+	absPostsStoreDir, _ := filepath.Abs(postsStoreDir)
+	fmt.Printf("📁 Posts store directory: %s\n", absPostsStoreDir)
+
+	// 4. Initialize Handlers
+	admin := &handlers.AdminService{DB: db}
+	prefrosh := &handlers.PrefroshService{DB: db}
+	auth := &handlers.AuthService{DB: db}
+	posts := &handlers.PostsService{DB: db, PostsStoreDir: absPostsStoreDir}
+	instagram := &handlers.InstagramService{}
+
+	// 5. Setup Router
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
+	// Health check
+	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Go backend is running"})
 	})
 
-	mux.HandleFunc("/api/data", func(w http.ResponseWriter, r *http.Request) {
-		// Example: Query database here in the future
-		response := map[string]string{
-			"message": "Hello from Go!",
-			"time":    "Now",
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
+	// Auth routes
+	mux.HandleFunc("POST /api/auth/callback", auth.Callback)
+	mux.HandleFunc("GET /api/auth/login-url", auth.GetLoginURL)
+	mux.HandleFunc("GET /api/auth/logout-url", auth.GetLogoutURL)
+	mux.HandleFunc("POST /api/auth/check-admin", auth.CheckAdmin)
+	mux.HandleFunc("GET /api/auth/me", auth.UserInfo)
 
-	// 4. CORS Middleware (for development)
+	// Posts routes
+	mux.HandleFunc("POST /api/posts/submit", posts.Submit)
+	mux.HandleFunc("GET /api/posts/list", posts.List)
+	mux.HandleFunc("GET /api/posts/{id}", posts.GetPost)
+
+	// Admin routes
+	mux.HandleFunc("GET /api/admin/dashboard", admin.Dashboard)
+
+	// Instagram routes
+	mux.HandleFunc("GET /api/instagram/validate", instagram.Validate)
+
+	// Prefrosh routes (legacy)
+	mux.HandleFunc("GET /api/prefrosh/list", prefrosh.List)
+
+	// 6. CORS Middleware (for development)
 	handler := corsMiddleware(mux)
 
-	// 5. Start Server
+	// 7. Start Server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -96,6 +138,17 @@ func main() {
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// maskSecret hides most of a secret string for safe logging
+func maskSecret(s string) string {
+	if len(s) == 0 {
+		return "(not set)"
+	}
+	if len(s) <= 4 {
+		return "****"
+	}
+	return s[:2] + "****" + s[len(s)-2:]
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

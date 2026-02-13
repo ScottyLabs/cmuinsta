@@ -7,6 +7,13 @@ Automating frontend for the CMU prefrosh page.
 - **Backend:** Go
 - **Database:** PostgreSQL
 
+### TODO
+ - Add image processing on client side (compress and crops to ideal aspect ratio as supported by instagram API)
+ - Image processing for the first slide, we need to be able to frame an image like the Co2030 account does in the red or blue frame randomly (it alternates iirc)
+ - Post preview for client
+ - Continous uploads: when a client uploads an image it should automatically sync to the backend ASAP so that their progress is saved
+ - All of backend should be reviewed/written
+
 ### Getting Started
 
 To get started, follow these steps:

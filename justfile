@@ -1,9 +1,10 @@
 set dotenv-load := true
 
 # Global Variables
-export PGDATA       := invocation_directory() + "/.pg_data"
-export PGHOST       := invocation_directory() + "/tmp"
-export LOGFILE      := PGDATA + "/logfile"
+export PGDATA           := invocation_directory() + "/.pg_data"
+export PGHOST           := invocation_directory() + "/tmp"
+export LOGFILE          := PGDATA + "/logfile"
+export POSTS_STORE_DIR  := invocation_directory() + "/.posts_store"
 
 # Use the correct database name here
 export DB_NAME      := "cmuinsta"
@@ -15,6 +16,15 @@ export DATABASE_URL := "host=" + PGHOST + " user=postgres dbname=" + DB_NAME + "
 BACKEND_PORT  := env_var_or_default('BACKEND_PORT', '8080')
 FRONTEND_PORT := env_var_or_default('FRONTEND_PORT', '5173')
 
+# OIDC Configuration (loaded from .env)
+OIDC_ISSUER_URL   := env_var_or_default('OIDC_ISSUER_URL', '')
+OIDC_CLIENT_ID    := env_var_or_default('OIDC_CLIENT_ID', '')
+OIDC_CLIENT_SECRET := env_var_or_default('OIDC_CLIENT_SECRET', '')
+OIDC_REDIRECT_URI := env_var_or_default('OIDC_REDIRECT_URI', 'http://localhost:5173/oauth/callback')
+
+# Admin Configuration
+ADMIN_IDS := env_var_or_default('ADMIN_IDS', '')
+
 # Default recipe
 default:
     @just --list
@@ -23,13 +33,20 @@ default:
 
 # Setup, Sync, and Run everything
 up: db-start
-    mkdir .posts_store
+    mkdir -p {{POSTS_STORE_DIR}}
     @echo "📦 Syncing all dependencies..."
     cd backend && go mod tidy
     cd frontend && bun install
     @echo "🚀 Starting Full Stack (Backend: {{BACKEND_PORT}}, Frontend: {{FRONTEND_PORT}})..."
-    # Pass PORT to Go and use --port for Bun/Vite
-    (cd backend && PORT={{BACKEND_PORT}} go run main.go) & \
+    (cd backend && \
+        PORT={{BACKEND_PORT}} \
+        POSTS_STORE_DIR={{POSTS_STORE_DIR}} \
+        OIDC_ISSUER_URL={{OIDC_ISSUER_URL}} \
+        OIDC_CLIENT_ID={{OIDC_CLIENT_ID}} \
+        OIDC_CLIENT_SECRET={{OIDC_CLIENT_SECRET}} \
+        OIDC_REDIRECT_URI={{OIDC_REDIRECT_URI}} \
+        ADMIN_IDS={{ADMIN_IDS}} \
+        go run main.go) & \
     (cd frontend && bun dev --port {{FRONTEND_PORT}})
 
 # Stop the full stack and cleanup background processes safely
@@ -44,14 +61,22 @@ down: db-stop
 # --- Development Commands ---
 
 dev: db-start
-    mkdir .posts_store
+    mkdir -p {{POSTS_STORE_DIR}}
     @echo "📦 Syncing all dependencies..."
     cd backend && go mod tidy
     cd frontend && bun install
     @echo "🚀 Starting Full Stack (Backend: {{BACKEND_PORT}}, Frontend: {{FRONTEND_PORT}})..."
-    # Pass PORT to Go and use --port for Bun/Vite
-    (cd backend && PORT={{BACKEND_PORT}} go run main.go) & \
+    (cd backend && \
+        PORT={{BACKEND_PORT}} \
+        POSTS_STORE_DIR={{POSTS_STORE_DIR}} \
+        OIDC_ISSUER_URL={{OIDC_ISSUER_URL}} \
+        OIDC_CLIENT_ID={{OIDC_CLIENT_ID}} \
+        OIDC_CLIENT_SECRET={{OIDC_CLIENT_SECRET}} \
+        OIDC_REDIRECT_URI={{OIDC_REDIRECT_URI}} \
+        ADMIN_IDS={{ADMIN_IDS}} \
+        go run main.go) & \
     (cd frontend && bun dev --port {{FRONTEND_PORT}})
+
 
 build:
     @echo "📦 Building project..."

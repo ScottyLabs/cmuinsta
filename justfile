@@ -118,4 +118,4 @@ db-shell: db-start
 
 # Initialize the database (Run this once)
 db-init:
-    psql -U etashj -d postgres -c "CREATE DATABASE cmuinsta;"
+    psql -U $USER -d postgres -c "CREATE DATABASE cmuinsta;"

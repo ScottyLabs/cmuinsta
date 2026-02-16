@@ -517,7 +517,7 @@
                                         @{cleanInstagramUsername}
                                     </p>
                                     <p class="text-sm text-gray-500">
-                                        Please verify this is your account
+                                        Please check that this is your account
                                     </p>
                                 </div>
 

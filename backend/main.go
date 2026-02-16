@@ -48,9 +48,9 @@ func main() {
 
 	// 2. Create Table
 	// The table format is like this
-	// |------------|------------|------------|------------|--------------|-------------|-----------|
-	// | id         | andrewid   | username   | created_at | submitted_at | approved_at | posted_at |
-	// |------------|------------|------------|------------|--------------|-------------|-----------|
+	// |------------|------------|------------|------|------------|--------------|-------------|-----------|
+	// | id         | andrewid   | username   | hash | created_at | submitted_at | approved_at | posted_at |
+	// |------------|------------|------------|------|------------|--------------|-------------|-----------|
 	//
 	// content folder will look something like this:
 	//			 andrewid
@@ -63,8 +63,9 @@ func main() {
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS posts (
 			id SERIAL PRIMARY KEY,
-			andrewid VARCHAR(8) NOT NULL,
-			username VARCHAR(30) NOT NULL,
+			andrewid VARCHAR(8) NOT NULL UNIQUE,
+			username VARCHAR(30) NOT NULL UNIQUE,
+			hash VARCHAR(30) NOT NULL UNIQUE,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			submitted_at TIMESTAMP DEFAULT NULL,
 			approved_at TIMESTAMP DEFAULT NULL,

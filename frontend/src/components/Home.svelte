@@ -14,6 +14,9 @@
     let submitError = "";
     let submitSuccess = false;
 
+    // Post preview state
+    let previewIndex = 0;
+
     // Instagram validation state
     let isValidatingInstagram = false;
     let instagramValid: boolean | null = null;
@@ -145,6 +148,7 @@
                 },
             ];
         });
+        previewIndex = 0;
     }
 
     function removeFile(id: string) {
@@ -155,6 +159,22 @@
         uploadFiles = uploadFiles
             .filter((f) => f.id !== id)
             .map((f, idx) => ({ ...f, order: idx }));
+
+        if (previewIndex >= uploadFiles.length) {
+            previewIndex = Math.max(0, uploadFiles.length - 1);
+        }
+    }
+
+    function nextPreview() {
+        if (previewIndex < uploadFiles.length - 1) {
+            previewIndex++;
+        }
+    }
+
+    function prevPreview() {
+        if (previewIndex > 0) {
+            previewIndex--;
+        }
     }
 
     // Drag and drop handlers
@@ -728,6 +748,191 @@
                         </div>
                     {/if}
                 </div>
+
+                <!-- Post Preview -->
+                {#if uploadFiles.length > 0}
+                    <div
+                        class="mt-8 border rounded-xl overflow-hidden shadow-sm bg-white"
+                    >
+                        <div
+                            class="bg-gray-50 px-4 py-2 border-b text-xs font-semibold text-gray-500 uppercase tracking-wider"
+                        >
+                            Post Preview
+                        </div>
+
+                        <!-- Instagram Header -->
+                        <div class="flex items-center p-3">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 to-fuchsia-600 p-[2px]"
+                            >
+                                <div
+                                    class="w-full h-full rounded-full bg-white p-[2px]"
+                                >
+                                    <div
+                                        class="w-full h-full rounded-full bg-gray-200 overflow-hidden"
+                                    >
+                                        <svg
+                                            class="w-full h-full text-gray-400"
+                                            fill="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                                            />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ml-3">
+                                <span class="text-sm font-semibold text-gray-900"
+                                    >{instagramUsername || "username"}</span
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="aspect-square bg-black relative group">
+                            {#if uploadFiles[previewIndex].file.type.startsWith("video/")}
+                                <video
+                                    src={uploadFiles[previewIndex].preview}
+                                    class="w-full h-full object-contain"
+                                    controls
+                                    playsinline
+                                >
+                                    <track kind="captions" />
+                                </video>
+                            {:else}
+                                <img
+                                    src={uploadFiles[previewIndex].preview}
+                                    alt="Post content"
+                                    class="w-full h-full object-contain"
+                                />
+                            {/if}
+
+                            <!-- Counter -->
+                            {#if uploadFiles.length > 1}
+                                <div
+                                    class="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm"
+                                >
+                                    {previewIndex + 1}/{uploadFiles.length}
+                                </div>
+
+                                <!-- Navigation Buttons -->
+                                {#if previewIndex > 0}
+                                    <button
+                                        type="button"
+                                        on:click|preventDefault={prevPreview}
+                                        class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-1 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <svg
+                                            class="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M15 19l-7-7 7-7"
+                                            />
+                                        </svg>
+                                    </button>
+                                {/if}
+
+                                {#if previewIndex < uploadFiles.length - 1}
+                                    <button
+                                        type="button"
+                                        on:click|preventDefault={nextPreview}
+                                        class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-1 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <svg
+                                            class="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M9 5l7 7-7 7"
+                                            />
+                                        </svg>
+                                    </button>
+                                {/if}
+
+                                <!-- Pagination Dots -->
+                                <div
+                                    class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5"
+                                >
+                                    {#each uploadFiles as _, i}
+                                        <div
+                                            class="w-1.5 h-1.5 rounded-full transition-colors {i ===
+                                            previewIndex
+                                                ? 'bg-blue-500'
+                                                : 'bg-white/50'}"
+                                        ></div>
+                                    {/each}
+                                </div>
+                            {/if}
+                        </div>
+
+                        <!-- Footer/Actions -->
+                        <div class="p-3">
+                            <div class="flex items-center gap-4 mb-3">
+                                <svg
+                                    class="w-6 h-6 text-gray-800"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                                    />
+                                </svg>
+                                <svg
+                                    class="w-6 h-6 text-gray-800"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                    />
+                                </svg>
+                                <svg
+                                    class="w-6 h-6 text-gray-800"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M5 12h14M12 5l7 7-7 7"
+                                    />
+                                </svg>
+                            </div>
+
+                            <div class="space-y-1">
+                                <p class="text-sm">
+                                    <span class="font-semibold mr-1"
+                                        >{instagramUsername || "cmu_2030"}</span
+                                    >
+                                    {caption}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {/if}
 
                 <!-- Submit Button -->
                 <button

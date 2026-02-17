@@ -12,23 +12,23 @@ Automating frontend for the CMU prefrosh page.
  - Image processing for the first slide, we need to be able to frame an image like the Co2030 account does in the red or blue frame randomly (it alternates iirc)
  - Post preview for client
  - Continous uploads: when a client uploads an image it should automatically sync to the backend ASAP so that their progress is saved
- - All of backend should be reviewed/written
+ - All of backend should be reviewed/rewritten
 
 ### Getting Started
 
 To get started, follow these steps:
 
-1. Clone the repository:
+1. Clone the repository and move into that directory:
    ```bash
-   git clone https://github.com/yourusername/cmuinsta.git
-   ```
-2. Make sure you have NixOS with DirEnv installed, similar if not same as [Terrier contribution setup](https://github.com/ScottyLabs/terrier/blob/main/CONTRIBUTING.md)
-3. Navigate to the project directory:
-   ```bash
-   git clone https://github.com/etashj/cmuinsta.git
+   git clone https://codeberg.org/ScottyLabs/cmuinsta
    cd cmuinsta
    ```
+2. Make sure you have NixOS with DirEnv installed, similar if not same as [Terrier contribution setup](https://github.com/ScottyLabs/terrier/blob/main/CONTRIBUTING.md)
 4. Copy the `.env.sample` file and modify
+5. Inititalize the database (only run this once)
+   ```bash
+   just db-init
+    ```
 5. Run the app for development or production
    ```bash
    just dev
@@ -42,10 +42,14 @@ To get started, follow these steps:
 
 ### Commands
 
+- `just`: List all commands
 - `just dev`: Start the full stack in development mode.
+- `just up`: Equivalent to dev
 - `just build`: Compile the backend and frontend for production.
-- `just clean`: Remove build artifacts (`bin/`, `dist/`, `node_modules/`).
+- `just down`: Kill all processes
+- `just clean`: Deletes all temp files, databases, etc. 
 - `just db-init`: Initialize the local Postgres database.
 - `just db-start`: Start the database manually.
 - `just db-stop`: Stop the database.
 - `just db-shell`: Open a `psql` shell to the local database.
+- `just db-reset`: Delete `postgres` directory

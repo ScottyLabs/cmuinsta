@@ -32,9 +32,13 @@ The GO backend will be designed to handle user submissions, verifications if nee
 ### Database
 The database will have to host data about users and post data. This includes names, andrew ids, instagram usernames, post content (caption and photos), and internal status details. The database details will be covered in RFC 3, but will consist of some ocmbination of a SQLite relational database and file storage for images and captions. This is due to the simplcity and portability of SQLite and since our requests are limited to the size of the incoming class. This can reasonable be capped to 1,750 students and is almost guaranteed to be below 2,000 students, of whcih only a fraction will submit data. 
 
+### Development Environment
+We will be using Nix as a pacakge manager with direnv to ensure a consistent development environment across all contributors.
+
 ### Alternatives Considered
  - For frontend React was considered, but Svelte was chosen due to its low boilerplate and static site generation capabilities.
  - For backend, we considered Rust but avoided it due to complexity and chose against Typescript and Node due to speed
+ - We also considered Docker for development but decided against it due to the pivot in hosting for ScottyLabs. 
 
 ## Open Questions
  - What will the authetnciation flow be? How can we verify admissions and instagram usernames?

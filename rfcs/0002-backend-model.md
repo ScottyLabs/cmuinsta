@@ -2,7 +2,7 @@ CMU Insta RFC 2
 # Backend Model
  - Author: @etashj
  - Created: 2026-05-07
- - Updated: 2026-05-08
+ - Updated: 2026-05-09
 
 ## Overview
 This RFC will outline the backend model for CMU Insta, including endpoints, possible authentication mechanisms, and some implementation details. 
@@ -45,11 +45,11 @@ POST /me
  - Body:
  ```json
  {
-   "instagram_username": "identifier to link to an instagram account"
+   "instagram_id": "unique identifier to link to an instagram account"
  }
  ```
 **Constraints:**
- - `instagram_username`: Must be a unique string identifier for the user's Instagram account that is accepted by the backend (this will be defined in RFC 4 for implementation and later updated)
+ - `instagram_id`: Must be a unique string identifier for the user's Instagram account that is accepted by the backend (this is defined in RFC 4 and mentioned in part in RFC 3). 
 
 **Response:**
  - Status: `201 Created`

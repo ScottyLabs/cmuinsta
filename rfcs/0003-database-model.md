@@ -28,11 +28,11 @@ Code and implementation details will not be described in this RFC. It will provi
 ### Database Layout
 Since the database is rather simple, we will forgo a relational flowchart in favor of a simple table schema. Here is the schema for the `students` table with some sample entries. 
 
-| AndrewID | Instagram | Queued | Posted | 
+| AndrewID | Name | Hometown | Instagram | Queued | Posted | 
 |-----------|-----------|-------|-------|
-| etashjha |  etashj         |  NULL     | NULL      |
-| kdass | kritd          |  2026-05-08T08:00:00Z     |  NULL     |
-| anishp | ap-1          |  2026-05-06T08:00:00Z     |   2026-05-07T11:20:00Z     |
+| etashjha |  Etash J | Pittsburgh, PA |etashj         |  NULL     | NULL      |
+| kdass | Krit D | Sesame Street, FL |kritd          |  2026-05-08T08:00:00Z     |  NULL     |
+| anishp | Anish P | Edison, NJ |ap-1          |  2026-05-06T08:00:00Z     |   2026-05-07T11:20:00Z     |
 
 Using this schema, we can store the queue and post history for each student, as well as their Instagram username. A NULL field indicates that an event has not yet occurred, it follows that if the Posted field is non-NULL, then the Queued field must also be non-NULL. This will be abstracted using an ORM. 
 
@@ -57,6 +57,16 @@ store/
 
 ### ORM
 We will use [GORM](https://gorm.io/) since it is a popular ORM for Go and supports SQLite out of the box. Providing a simple, schema-based interface for database operations. We are not concerned with performance for this task. 
+
+### Linking to Instagram
+Since users need to be properly linked to instagram, as described in RFC 4, we will use a unique identifier for each user's instagram account. This will be stored in the database separately as a unique verifier table. That is something along the lines of, 
+| Username | UUID | Consumed |
+|---------|------|----------|
+| etashj | XXXXXXX | true |
+| kdass | YYYYYYY | false |
+| anishp | ZZZZZZZ | false |
+
+These will be able to be suffixed onto URLs to uniquely sign up and link an andrew ID to a specific instagram account via that `POST /api/v1/me` endpoint (see body). The database will provide the reverse lookup of UUID to username. Once the account is created we will mark the UUID as consumed so it cannot be reused.
 
 ## Open Questions
  - Will we need to concern ourselves with speed? Should this be optimized for speed?

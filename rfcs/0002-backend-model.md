@@ -2,7 +2,7 @@ CMU Insta RFC 2
 # Backend Model
  - Author: @etashj
  - Created: 2026-05-07
- - Updated: 2026-05-07
+ - Updated: 2026-05-08
 
 ## Overview
 This RFC will outline the backend model for CMU Insta, including endpoints, possible authentication mechanisms, and some implementation details. 

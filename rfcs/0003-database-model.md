@@ -2,7 +2,7 @@ CMU Insta RFC 3
 # Database Model
  - Author: @etashj
  - Created: 2026-05-08
- - Updated: 2026-05-09
+ - Updated: 2026-05-11
 
 ## Overview
 Storing student data and their images requires a robus databse and storage model. This RFC will outline that process using file storage on our server for images and a realtional database with ORM to keep track of registered students. 

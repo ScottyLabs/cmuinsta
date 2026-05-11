@@ -1,26 +1,24 @@
 set dotenv-load := true
 
 # Global Variables
-export PGDATA           := invocation_directory() + "/.pg_data"
-export PGHOST           := invocation_directory() + "/tmp"
-export LOGFILE          := PGDATA + "/logfile"
-export POSTS_STORE_DIR  := invocation_directory() + "/.posts_store"
+export PGDATA          := invocation_directory() + "/.pg_data"
+export PGHOST          := invocation_directory() + "/.pg_tmp"
+export LOGFILE         := PGDATA + "/logfile"
+export POSTS_STORE_DIR := invocation_directory() + "/.posts_store"
 
-# Use the correct database name here
-export DB_NAME      := "cmuinsta"
+# Database
+export DB_NAME     := "cmuinsta"
+export DATABASE_URL := "postgresql://postgres@/" + DB_NAME + "?host=" + PGHOST
 
-# Construct the URL using the variables defined above
-export DATABASE_URL := "host=" + PGHOST + " user=postgres dbname=" + DB_NAME + " sslmode=disable"
-
-# Global Port Config (with defaults)
+# Ports (overridable via .env)
 BACKEND_PORT  := env_var_or_default('BACKEND_PORT', '8080')
 FRONTEND_PORT := env_var_or_default('FRONTEND_PORT', '5173')
 
 # OIDC Configuration (loaded from .env)
-OIDC_ISSUER_URL   := env_var_or_default('OIDC_ISSUER_URL', '')
-OIDC_CLIENT_ID    := env_var_or_default('OIDC_CLIENT_ID', '')
+OIDC_ISSUER_URL    := env_var_or_default('OIDC_ISSUER_URL', '')
+OIDC_CLIENT_ID     := env_var_or_default('OIDC_CLIENT_ID', '')
 OIDC_CLIENT_SECRET := env_var_or_default('OIDC_CLIENT_SECRET', '')
-OIDC_REDIRECT_URI := env_var_or_default('OIDC_REDIRECT_URI', 'http://localhost:5173/oauth/callback')
+OIDC_REDIRECT_URI  := env_var_or_default('OIDC_REDIRECT_URI', 'http://localhost:' + FRONTEND_PORT + '/oauth/callback')
 
 # Admin Configuration
 ADMIN_IDS := env_var_or_default('ADMIN_IDS', '')
@@ -29,93 +27,82 @@ ADMIN_IDS := env_var_or_default('ADMIN_IDS', '')
 default:
     @just --list
 
-# --- The "One Script" Solution ---
+# --- Main Commands ---
 
-# Setup, Sync, and Run everything
-up: db-start
-    mkdir -p {{POSTS_STORE_DIR}}
-    @echo "📦 Syncing all dependencies..."
-    cd backend && go mod tidy
-    cd frontend && bun install
-    @echo "🚀 Starting Full Stack (Backend: {{BACKEND_PORT}}, Frontend: {{FRONTEND_PORT}})..."
-    (cd backend && \
-        PORT={{BACKEND_PORT}} \
-        POSTS_STORE_DIR={{POSTS_STORE_DIR}} \
-        OIDC_ISSUER_URL={{OIDC_ISSUER_URL}} \
-        OIDC_CLIENT_ID={{OIDC_CLIENT_ID}} \
-        OIDC_CLIENT_SECRET={{OIDC_CLIENT_SECRET}} \
-        OIDC_REDIRECT_URI={{OIDC_REDIRECT_URI}} \
-        ADMIN_IDS={{ADMIN_IDS}} \
-        go run main.go) & \
-    (cd frontend && bun dev --port {{FRONTEND_PORT}})
+# Install dependencies, start DB, and run the full stack with hot reload
+dev: db-ensure
+    @mkdir -p {{POSTS_STORE_DIR}}
+    @echo "📦 Syncing dependencies..."
+    @cd backend && go mod tidy
+    @cd frontend && bun install
+    @echo "🚀 Starting full stack (backend: {{BACKEND_PORT}}, frontend: {{FRONTEND_PORT}})..."
+    @trap 'kill $(jobs -p) 2>/dev/null; just db-stop' EXIT; \
+        (cd backend && \
+            DATABASE_URL={{DATABASE_URL}} \
+            PORT={{BACKEND_PORT}} \
+            POSTS_STORE_DIR={{POSTS_STORE_DIR}} \
+            OIDC_ISSUER_URL={{OIDC_ISSUER_URL}} \
+            OIDC_CLIENT_ID={{OIDC_CLIENT_ID}} \
+            OIDC_CLIENT_SECRET={{OIDC_CLIENT_SECRET}} \
+            OIDC_REDIRECT_URI={{OIDC_REDIRECT_URI}} \
+            ADMIN_IDS={{ADMIN_IDS}} \
+            go run main.go) & \
+        (cd frontend && bun dev --port {{FRONTEND_PORT}})
 
-# Stop the full stack and cleanup background processes safely
+# Build production binaries
+build: db-ensure
+    @echo "📦 Building..."
+    @mkdir -p bin
+    @cd backend && go build -o ../bin/server main.go
+    @cd frontend && bun install && bun run build
+    @echo "✅ Build complete → bin/server and frontend/dist"
+
+# Kill any running dev processes
 down: db-stop
-    @echo "🛑 Cleaning up your dev processes..."
-    @# -U $(id -u) ensures you only kill processes owned by YOU
-    -pkill -u $(id -u) -f "go run main.go" || true
-    -pkill -u $(id -u) -f "vite" || true
-    -pkill -u $(id -u) -f "bun" || true
-    @echo "✅ Everything is down."
+    @echo "🛑 Stopping dev processes..."
+    @pkill -u $$(id -u) -f "go run main.go" || true
+    @pkill -u $$(id -u) -f "vite"           || true
+    @pkill -u $$(id -u) -f "bun"            || true
+    @echo "✅ Done."
 
-# --- Development Commands ---
+# Remove all build artifacts and local state (does not touch .env)
+clean: down
+    @echo "🧹 Cleaning..."
+    @rm -rf bin frontend/dist frontend/node_modules .pg_data .pg_tmp .posts_store
+    @echo "✅ Clean."
 
-dev: db-start
-    mkdir -p {{POSTS_STORE_DIR}}
-    @echo "📦 Syncing all dependencies..."
-    cd backend && go mod tidy
-    cd frontend && bun install
-    @echo "🚀 Starting Full Stack (Backend: {{BACKEND_PORT}}, Frontend: {{FRONTEND_PORT}})..."
-    (cd backend && \
-        PORT={{BACKEND_PORT}} \
-        POSTS_STORE_DIR={{POSTS_STORE_DIR}} \
-        OIDC_ISSUER_URL={{OIDC_ISSUER_URL}} \
-        OIDC_CLIENT_ID={{OIDC_CLIENT_ID}} \
-        OIDC_CLIENT_SECRET={{OIDC_CLIENT_SECRET}} \
-        OIDC_REDIRECT_URI={{OIDC_REDIRECT_URI}} \
-        ADMIN_IDS={{ADMIN_IDS}} \
-        go run main.go) & \
-    (cd frontend && bun dev --port {{FRONTEND_PORT}})
+# --- Database ---
 
-
-build:
-    @echo "📦 Building project..."
-    mkdir -p bin
-    cd backend && go build -o ../bin/server main.go
-    cd frontend && bun install && bun run build
-
-clean:
-    rm -rf bin frontend/dist frontend/node_modules .pg_data tmp
-
-# --- Database Management ---
-
-db-start:
+# Start Postgres if not already running, initialize cluster and DB if needed
+db-ensure:
     @mkdir -p {{PGHOST}}
     @if [ ! -d "{{PGDATA}}" ]; then \
-        echo "📦 Initializing New Database Cluster..."; \
-        initdb --auth=trust --no-locale --encoding=UTF8 > /dev/null; \
+        echo "📦 Initializing Postgres cluster..."; \
+        initdb --auth=trust --no-locale --encoding=UTF8 -D {{PGDATA}} > /dev/null; \
         pg_ctl -D {{PGDATA}} -l {{LOGFILE}} -o "-k {{PGHOST}}" start; \
         sleep 2; \
         createuser -h {{PGHOST}} -s postgres || true; \
-        createdb -h {{PGHOST}} -O postgres postgres || true; \
+        createdb   -h {{PGHOST}} -U postgres postgres || true; \
+        createdb   -h {{PGHOST}} -U postgres {{DB_NAME}} || true; \
+        echo "✅ Cluster ready."; \
+    else \
+        pg_ctl status -D {{PGDATA}} > /dev/null || \
+            pg_ctl -D {{PGDATA}} -l {{LOGFILE}} -o "-k {{PGHOST}}" start; \
     fi
-    @pg_ctl status -D {{PGDATA}} > /dev/null || pg_ctl -D {{PGDATA}} -l {{LOGFILE}} -o "-k {{PGHOST}}" start
-    @# Verify the postgres role exists (handles cases where init was interrupted)
-    @psql -h {{PGHOST}} -U $(whoami) -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='postgres'" | grep -q 1 || createuser -h {{PGHOST}} -s postgres
-    @echo "🐘 Postgres is active at {{PGHOST}}"
+    @echo "🐘 Postgres is ready at {{PGHOST}}"
 
+# Stop the Postgres server
 db-stop:
-    @pg_ctl -D {{PGDATA}} stop
+    @pg_ctl -D {{PGDATA}} stop -m fast 2>/dev/null || true
 
-db-reset:
-    @just db-stop || true
-    rm -rf {{PGDATA}} {{PGHOST}}
-    @just db-start
-    @just db-init
+# Open a psql shell
+db-shell: db-ensure
+    psql -h {{PGHOST}} -U postgres -d {{DB_NAME}}
 
-db-shell: db-start
-    psql -h {{PGHOST}} -U postgres -d postgres
-
-# Initialize the database (Run this once)
-db-init:
-    psql -U $USER -d postgres -c "CREATE DATABASE cmuinsta;"
+# Wipe and reinitialize the database cluster from scratch
+db-reset: down
+    @echo "⚠️  Resetting database..."
+    @pg_ctl -D {{PGDATA}} stop -m fast 2>/dev/null || true
+    @rm -rf {{PGDATA}} {{PGHOST}}
+    @just db-ensure
+    @echo "✅ Database reset."

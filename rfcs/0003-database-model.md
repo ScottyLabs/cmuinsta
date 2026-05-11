@@ -28,11 +28,11 @@ Code and implementation details will not be described in this RFC. It will provi
 ### Database Layout
 Since the database is rather simple, we will forgo a relational flowchart in favor of a simple table schema. Here is the schema for the `students` table with some sample entries. 
 
-| AndrewID | Name | Hometown | Instagram | Queued | Posted | 
-|-----------|-----------|-------|-------|
-| etashjha |  Etash J | Pittsburgh, PA |etashj         |  NULL     | NULL      |
-| kdass | Krit D | Sesame Street, FL |kritd          |  2026-05-08T08:00:00Z     |  NULL     |
-| anishp | Anish P | Edison, NJ |ap-1          |  2026-05-06T08:00:00Z     |   2026-05-07T11:20:00Z     |
+| AndrewID | Name | Major | Hometown | Instagram | Queued | Position | Posted | 
+|-----------|-----------|-------|-------|-------|-------|-------|-------|
+| etashjha |  Etash J | Computer Science | Pittsburgh, PA | etashj | NULL | NULL | NULL |
+| kdass | Krit D | Computational Biology | Sesame Street, FL | kritd | 2026-05-08T08:00:00Z | 2 | NULL |
+| anishp | Anish P | Mathematics | Edison, NJ | ap-1 | 2026-05-06T08:00:00Z | 1 | 2026-05-07T11:20:00Z |
 
 Using this schema, we can store the queue and post history for each student, as well as their Instagram username. A NULL field indicates that an event has not yet occurred, it follows that if the Posted field is non-NULL, then the Queued field must also be non-NULL. This will be abstracted using an ORM. 
 

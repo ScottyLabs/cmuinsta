@@ -17,6 +17,7 @@
             # --- Go ---
             go
             gopls
+	    gotools
 
             # --- Frontend (Bun) ---
             bun

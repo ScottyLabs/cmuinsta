@@ -375,6 +375,38 @@ DELETE /dequeue
   "posted": false
 }
 ```
+
+#### 2.7 Authenticating OIDC with a callback
+```
+POST /auth/callback
+```
+**Description:** Converts a code to a JWT using the Keycloack proxy (see RFC 4)
+ 
+**Request Body:**
+- Header: None
+- Body: 
+```json
+{
+  "code": "provided code"
+}
+```
+**Response Format:**
+- Status: `200 OK`
+- Body:
+```json
+{
+  "token": "JWT for authentication",
+  "expires_in": "5000",
+}
+```
+
+**Response Codes:**
+| Code | Description |
+|------|-------------|
+| 200 OK | User data successfully retrieved; returns the full user object. |
+| 400 Bad Request | Missing code in request body |
+| 401 Unauthorized | Missing, expired, or invalid code/JWT. |
+| 500 Internal Error | Database read failed or server-side exception. |
  
 **Notes:**
 - Note that the error code varies for jobs that were already posted and jobs that were not on the queue.

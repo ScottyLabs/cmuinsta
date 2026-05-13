@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"context"
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type User struct {
 	// User Data needed for the post
@@ -14,4 +19,18 @@ type User struct {
 	Queued   *time.Time
 	Position int `gorm:"default:-1"`
 	Posted   *time.Time
+}
+
+// AndrewIDLookup looks up a user in the database based on their AndrewID and
+// returns the corresponding User struct.
+func AndrewIDLookup(ctx context.Context, db *gorm.DB, andrewid string) (*User, error) {
+	var user User
+
+	result := db.WithContext(ctx).First(&user, "andrewid = ?", andrewid)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &user, nil
 }

@@ -2,7 +2,7 @@ CMU Insta RFC 2
 # Backend Model
  - Author: @etashj
  - Created: 2026-05-07
- - Updated: 2026-05-09
+ - Updated: 2026-05-12
 
 ## Overview
 This RFC will outline the backend model for CMU Insta, including endpoints, possible authentication mechanisms, and some implementation details. 
@@ -45,24 +45,34 @@ POST /me
  - Body:
  ```json
  {
-   "instagram_id": "unique identifier to link to an instagram account"
+   "instagram_id": "unique identifier to link to an instagram account", 
+   "name": "display name for the user", 
+   "major": "integed major caption content", 
+   "hometown" : "desired hometown"
  }
  ```
 **Constraints:**
  - `instagram_id`: Must be a unique string identifier for the user's Instagram account that is accepted by the backend (this is defined in RFC 4 and mentioned in part in RFC 3). 
+ - `hometown`: The location should always be "City, State" for U.S. residents (no "USA" afterward), and "City/Region, Country" for internationals.
+ - `hometown`: No short hands for cities like NYC or countries like UAE and always two digit codes for states like PA
 
 **Response:**
  - Status: `201 Created`
  - Body:
- ```json
- {
-   "andrewid": "etashjha",
-   "instagram_username": "etashj",
-   "description": null,
-   "images": [],
-   "created_at": "2026-05-08T15:38:40Z"
- }
- ```
+```json
+{
+  "andrewid": "etashjha",
+  "name": "Etash", 
+  "major": "Computer Science", 
+  "hometown": "Pittsburgh, PA", 
+  "instagram_username": "etashjha",
+  "caption": "The user's caption capped at 2,200 characters",
+  "image_count": 10
+  "queued_at": "2026-05-12T23:48:32.257Z",
+  "queue_position": 3
+  "posted_at": null,
+}
+```
  **Response Codes:**
  | Code | Description |
  |------|-------------|
@@ -198,11 +208,11 @@ PUT /caption
 
  ```json
  { 
-   "description": "The user's description capped at 2,200 characters" 
+   "caption": "The user's caption capped at 2,200 characters" 
  }
 ```
 **Constraints:**
-  - `description` is capped at 2,200 characters and will return a `400 Bad Request` if exceeded.
+  - `caption` is capped at 2,200 characters and will return a `400 Bad Request` if exceeded.
 
 **Response Format:**
  - Status: `200 OK`
@@ -210,7 +220,7 @@ PUT /caption
  ```json
  {
    "andrewid": "etashjha",
-   "description": "The user's description capped at 2,200 characters",
+   "caption": "The user's caption capped at 2,200 characters",
    "updated_at": "2026-05-08T15:38:40Z"
  }
  ```
@@ -241,26 +251,21 @@ GET /me
 ```json
 {
   "andrewid": "etashjha",
+  "name": "Etash", 
+  "major": "Computer Science", 
+  "hometown": "Pittsburgh, PA", 
   "instagram_username": "etashjha",
-  "description": "The user's description capped at 2,200 characters",
-  "images": [
-    { "index": 0, "image_url": "https://example.com/images/etashjha/0.jpg", "updated_at": "2026-05-08T15:38:40Z" },
-    { "index": 1, "image_url": "https://example.com/images/etashjha/1.jpg", "updated_at": "2026-05-08T15:40:01Z" },
-    { "index": 2, "image_url": null, "updated_at": null }, 
-    ...
-    { "index": 9, "image_url": null, "updated_at": null },
-  ],
-  "queue_status": "pending",
-  "posted": false,
-  "created_at": "2026-05-08T15:38:40Z",
-  "updated_at": "2026-05-08T15:40:01Z"
+  "caption": "The user's caption capped at 2,200 characters",
+  "image_count": 10
+  "queued_at": "2026-05-12T23:48:32.257Z",
+  "queue_position": 3
+  "posted_at": null,
 }
 ```
  
 **Notes:**
-- `images` is always returned as an ordered array of 10 elements (indices 0-9). Slots with no uploaded image have `image_url: null` and `updated_at: null`.
-- `queue_status` is one of `"none"`, `"pending"` when not posted and `"posted"` when posted.
-- `posted` is `true` if the post has been successfully published to Instagram.
+- `queue_at` and `posted_at` may be null if the action has not been performed
+- `queue_position` is the number of posts that must be completed before this user is posted, or negative one if not queued OR already posted
 
 **Response Codes:**
  

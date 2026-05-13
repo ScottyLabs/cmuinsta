@@ -27,6 +27,13 @@ func Init() {
 	DB.AutoMigrate(
 		&models.User{},
 		&models.AppState{},
-		&models.InstagramIdentifierPair{}
+		&models.InstagramIdPair{},
 	)
+
+	DB.FirstOrCreate(
+		&models.AppState{ID: 1},
+		models.AppState{
+			ID: 1, QueuePosition: 0,
+			QueueSize: 0,
+		})
 }

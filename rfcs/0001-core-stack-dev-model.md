@@ -20,14 +20,14 @@ CMU Insta is a realtively simple project, which can prove to be usefulf or sever
 ## Detailed Design
 
 ### Frontend
-We will use Svelte with Vite since it requires low boilerplate and allows static site generation. Svelte is also more develpoer friendly than react. The style will be implemented with tailwind css due to the convenience of compoenents, inline styling, and utility classes. This will also allow mobile-responsiveness using compoenet based, reactive design. 
+We will use Svelte with Vite since it requires low boilerplate and allows static site generation. Svelte is also more develpoer friendly than react. The style will be implemented with tailwind css due to the convenience of compoenents, inline styling, and utility classes. This will also allow mobile-responsiveness using component based, reactive design. 
 
-We will also need a form of verification, for whcih we will use andrew IDs when they are available. This is to be addressed in RFC 4. For students who submit before andrew IDs are released, we have to consider how we can verify admission, albeit manually. Additionally, we should verify the validity of instagram username submitted since they will be a collaborator or tagged on a post, this will also be addressed later, but is likely to be done via some form of user interaction on the external platform. 
+We will also need a form of verification, for which we will use andrew IDs when they are available. This is to be addressed in RFC 4. For students who submit before andrew IDs are released, we have to consider how we can verify admission, albeit manually. Additionally, we should verify the validity of instagram username submitted since they will be a collaborator or tagged on a post, this will also be addressed later, but is likely to be done via some form of user interaction on the external platform. 
 
 ### Backend
-We will use Go to write the backend RESTful API due to its performance and ease of writing ocde for a small task. It's stadnard library should provide most of the HTTP features required for this task.  
+We will use Go to write the backend RESTful API due to its performance and ease of writing code for a small task. It's stadnard library should provide most of the HTTP features required for this task.  
 
-The GO backend will be designed to handle user submissions, verifications if needed, interactions with the database, and scheduled posts. 
+The Go backend will be designed to handle user submissions, verifications if needed, interactions with the database, and scheduled posts. 
 
 ### Database
 The database will have to host data about users and post data. This includes names, andrew ids, instagram usernames, post content (caption and photos), and internal status details. The database details will be covered in RFC 3, but will consist of some ocmbination of a SQLite relational database and file storage for images and captions. This is due to the simplcity and portability of SQLite and since our requests are limited to the size of the incoming class. This can reasonable be capped to 1,750 students and is almost guaranteed to be below 2,000 students, of whcih only a fraction will submit data. 

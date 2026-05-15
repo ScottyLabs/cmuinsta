@@ -25,10 +25,11 @@ type User struct {
 	Hometown string
 
 	// Data needed for internal state maintenance
-	State    Status `gorm:"not null"`
-	Queued   *time.Time
-	Position int `gorm:"default:-1"`
-	Posted   *time.Time
+	State     Status `gorm:"not null"`
+	Completed *time.Time
+	Verified  *time.Time
+	Position  int `gorm:"default:-1"`
+	Posted    *time.Time
 }
 
 // Store defines the database operations the bot and handlers need.

@@ -2,7 +2,7 @@ CMU Insta RFC 4
 # Verification Flow
  - Author: @etashj
  - Created: 2026-05-09
- - Updated: 2026-05-09
+ - Updated: 2026-05-15
 
 ## Overview
 
@@ -20,9 +20,14 @@ We will use the authentication flow provided by ScottyLabs to sign in with andre
 
 Additionally, we must verify that a user's instagram account is linked to their andrew ID. Since Instagram requires some interaction from the user, we will require the user to DM the account to create the initial point of contact. From there they will get a unique link which can be used to link their andrew ID to their instagram account. This will be stored in the database separately as a unique verifier. This is addressed in RFC 3. 
 
+The user will begin by DMing the account, they will receive a verification link which prompts them to log in with their andrew ID. This will call the endpoint whcih prompts us to create a database entry for the user provided they do not already exist. 
+
+To verfiy that a student is, indeed, prefrosh, we will also prompt them to upload proof of commitment. This includes an ED acceptance letter or the thank you for paying/committing email manually. 
+
 ## Open Questions
  - Will there be workarounds? 
  - Are we doing too much? 
+ - As an alternative, can we use a static archive of the CMU directory to check that an andrew ID is new from before acceptances are delivered? 
 
 ## Implementation Phases
  - The authentication flow will likely be implemented with the backend, and then added to the frontend.

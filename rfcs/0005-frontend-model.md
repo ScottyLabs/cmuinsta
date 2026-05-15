@@ -29,18 +29,7 @@ Making an intutive, easy-to-use frontend is integral to using this app. Thus we 
  ### Functionalities
  - The user must be able to register for an account with their andrew ID
  - The user must be able to link their instagram account in the flow described in RFC 4
- - The user should be able to preview their post almost exactly as it would appear on Instagram
- - Images should be edited (into the cover template) and downscaled/cropped for the instagram format on the frontend
- - The user should be able to save their progress automatically (i.e. uploads go straight to server immediately) and resume when coming back
- - The user should be able to post and view their status on the queue when they have already posted
- - They should not be able to post multiple times or modify their post after it has been posted
- - They should be able to cacnel their post if possible given the constaints of RFC 2
- - There should be a filter on posts to ensure no explcit content is made through this platform (that is, text or graphics, frontend or backend)
- - All this should be fully mobile compatible to ensure smoothness of the experience
-
- ### Implementation
-  - Likely this will be one dashboard in an SPA
-  - One form, one status page, registration page
+ - The experience should occur largely on instagram with the exception of verification
 
 ## Open Questions
  - Should content filtering be automated or manual? Frontend or backend?

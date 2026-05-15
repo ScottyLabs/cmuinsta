@@ -28,13 +28,15 @@ Code and implementation details will not be described in this RFC. It will provi
 ### Database Layout
 Since the database is rather simple, we will forgo a relational flowchart in favor of a simple table schema. Here is the schema for the `students` table with some sample entries. 
 
-| AndrewID | Name | Major | Hometown | Instagram | Queued | Position | Posted | 
-|-----------|-----------|-------|-------|-------|-------|-------|-------|
-| etashjha |  Etash J | Computer Science | Pittsburgh, PA | etashj | NULL | NULL | NULL |
-| kdass | Krit D | Computational Biology | Sesame Street, FL | kritd | 2026-05-08T08:00:00Z | 2 | NULL |
-| anishp | Anish P | Mathematics | Edison, NJ | ap-1 | 2026-05-06T08:00:00Z | 1 | 2026-05-07T11:20:00Z |
+| AndrewID | IGSID | Name    | Major                 | Hometown       | State      | Queued               | Position | Posted |
+|----------|-------|---------|-----------------------|----------------|------------|----------------------|----------|--------|
+| etashjha | XXXXX | Etash J | Computer Science      | Pittsburgh, PA | "complete" | 2026-05-08T08:00:00Z | 2        | NULL   |
+| kdass    | YYYYY | Krit D  | Computational Biology | NULL           | "hometown" | NULL                 | -1       | NULL   |
+| anishp   | ZZZZZ | NULL    | NULL                  | NULL           | "name"     | NULL                 | -1       | NULL   |
 
 Using this schema, we can store the queue and post history for each student, as well as their Instagram username. A NULL field indicates that an event has not yet occurred, it follows that if the Posted field is non-NULL, then the Queued field must also be non-NULL. This will be abstracted using an ORM. 
+
+The `state` field maintains the step that the user is on for information input, this holds an enum which represents a column of the table for information (that is, "name", "major", "hometown"). We forgo storing instagram username in favor of using the instagram API to convert IGSID to username. 
 
 ### File Storage
 On the server side, there will exist some `store` directory in which subdirectories corresponding to andrew IDs will be created. Each subdirectory will contain the student's images and descriptions. Images will be stored as enumeratedJPEG files at the isntagram resolution and the description as plain text. We will have a tree like this, with up to 10 images per student.
@@ -59,14 +61,7 @@ store/
 We will use [GORM](https://gorm.io/) since it is a popular ORM for Go and supports SQLite out of the box. Providing a simple, schema-based interface for database operations. We are not concerned with performance for this task. 
 
 ### Linking to Instagram
-Since users need to be properly linked to instagram, as described in RFC 4, we will use a unique identifier for each user's instagram account. This will be stored in the database separately as a unique verifier table. That is something along the lines of, 
-| Username | UUID | Consumed |
-|---------|------|----------|
-| etashj | XXXXXXX | true |
-| kdass | YYYYYYY | false |
-| anishp | ZZZZZZZ | false |
-
-These will be able to be suffixed onto URLs to uniquely sign up and link an andrew ID to a specific instagram account via that `POST /api/v1/me` endpoint (see body). The database will provide the reverse lookup of UUID to username. Once the account is created we will mark the UUID as consumed so it cannot be reused.
+IGSIDs are unique and non-predicatble and will be uniquely linked to an andrew ID via external verficaition site. The frontend will handle this authentication, described in RFC 4. 
 
 ## Open Questions
  - Will we need to concern ourselves with speed? Should this be optimized for speed?

@@ -27,7 +27,6 @@ func Init() {
 	DB.AutoMigrate(
 		&models.User{},
 		&models.AppState{},
-		&models.InstagramIdPair{},
 	)
 
 	DB.FirstOrCreate(

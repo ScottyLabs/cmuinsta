@@ -17,7 +17,7 @@ This will not only allow for a clear plan to reference when implementing the dat
 ## Goals
  - Define the database schema and storage model
    - This includes filepaths for images
-   - The row and column definitions for the relational database (already chosen to be SQLite)
+   - The row and column definitions for the relational database (already chosen to be Postgres)
 - Choosing an ORM for use in Go with the relational database. 
 
 ## Non Goals
@@ -36,7 +36,7 @@ Since the database is rather simple, we will forgo a relational flowchart in fav
 
 Using this schema, we can store the queue and post history for each student, as well as their Instagram username. A NULL field indicates that an event has not yet occurred, it follows that if the Posted field is non-NULL, then the Queued field must also be non-NULL. This will be abstracted using an ORM. 
 
-The `state` field maintains the step that the user is on for information input, this holds an enum which represents a column of the table for information (that is, "name", "major", "hometown"). We forgo storing instagram username in favor of using the instagram API to convert IGSID to username. 
+The `state` field maintains the step that the user is on for information input, this holds an enum which represents a column of the table for information (that is, "name", "major", "hometown"). We store instagram username redundantly for efficieny. 
 
 ### File Storage
 On the server side, there will exist some `store` directory in which subdirectories corresponding to andrew IDs will be created. Each subdirectory will contain the student's images and descriptions. Images will be stored as enumeratedJPEG files at the isntagram resolution and the description as plain text. We will have a tree like this, with up to 10 images per student.
@@ -58,7 +58,7 @@ store/
 ```
 
 ### ORM
-We will use [GORM](https://gorm.io/) since it is a popular ORM for Go and supports SQLite out of the box. Providing a simple, schema-based interface for database operations. We are not concerned with performance for this task. 
+We will use [GORM](https://gorm.io/) since it is a popular ORM for Go and supports postgres out of the box. Providing a simple, schema-based interface for database operations. We are not concerned with performance for this task. 
 
 ### Linking to Instagram
 IGSIDs are unique and non-predicatble and will be uniquely linked to an andrew ID via external verficaition site. The frontend will handle this authentication, described in RFC 4. 
